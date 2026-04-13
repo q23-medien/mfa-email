@@ -1,0 +1,11 @@
+# cat=basic/enable; type=boolean; label=Enable 2FA for all frontend users: When enabled, ALL frontend users must verify their login with an email code. When disabled, 2FA only applies to users with the individual checkbox enabled.
+enableForAll = 0
+
+# cat=basic/string; type=string; label=Site name: Used in the verification page title and email header. Example: "My Company Portal"
+siteName = My Website
+
+# cat=basic/string; type=string; label=Email subject prefix: Prefix for the verification email subject line. Example: "MyPortal" results in subject "MyPortal: Your verification code"
+emailSubjectPrefix = Login
+
+# cat=basic/string; type=string; label=Email signature: Optional closing line in verification emails. Example: "Your team at Example Corp." Leave empty to omit.
+emailSignature =

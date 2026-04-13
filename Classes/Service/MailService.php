@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Q23\MfaEmail\Service;
 
 use Symfony\Component\Mime\Address;
+use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 use TYPO3\CMS\Core\Log\LogManager;
 use TYPO3\CMS\Core\Mail\MailMessage;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
@@ -23,22 +24,32 @@ class MailService
             return false;
         }
 
-        $subject = 'DPV-PSA: Ihr Anmelde-Bestaetigungscode';
+        $extConf = $this->getExtConf();
+        $siteName = trim((string)($extConf['siteName'] ?? 'My Website')) ?: 'My Website';
+        $prefix = trim((string)($extConf['emailSubjectPrefix'] ?? 'Login')) ?: 'Login';
+        $signature = trim((string)($extConf['emailSignature'] ?? ''));
+
+        $subject = $prefix . ': Your verification code';
+        $signatureLine = $signature !== '' ? "\n\n" . $signature : '';
 
         $textBody = sprintf(
-            "Guten Tag%s,\n\n"
-            . "Ihr Bestaetigungscode fuer die Anmeldung bei DPV-PSA lautet:\n\n"
+            "Hello%s,\n\n"
+            . "Your verification code for %s:\n\n"
             . "    %s\n\n"
-            . "Dieser Code ist %d Minuten gueltig.\n\n"
-            . "Falls Sie diese Anmeldung nicht durchgefuehrt haben, "
-            . "ignorieren Sie bitte diese E-Mail und aendern Sie "
-            . "sicherheitshalber Ihr Passwort.\n\n"
-            . "Mit freundlichen Gruessen\n"
-            . "DPV - Deutsche Psychoanalytische Vereinigung",
+            . "This code is valid for %d minutes.\n\n"
+            . "If you did not initiate this login, please ignore this email "
+            . "and consider changing your password as a precaution."
+            . "%s",
             $name !== '' ? ' ' . $name : '',
+            $siteName,
             $code,
-            $validMinutes
+            $validMinutes,
+            $signatureLine
         );
+
+        $signatureHtml = $signature !== ''
+            ? '<p style="color: #888; font-size: 12px; margin-top: 20px;">' . htmlspecialchars($signature) . '</p>'
+            : '';
 
         $htmlBody = sprintf(
             '<!DOCTYPE html>'
@@ -46,23 +57,25 @@ class MailService
             . '<body style="font-family: Arial, Helvetica, sans-serif; color: #333; '
             . 'max-width: 500px; margin: 0 auto; padding: 20px;">'
             . '<div style="border-bottom: 3px solid #003366; padding-bottom: 15px; margin-bottom: 20px;">'
-            . '<strong style="color: #003366; font-size: 18px;">DPV-PSA</strong>'
+            . '<strong style="color: #003366; font-size: 18px;">%s</strong>'
             . '</div>'
-            . '<p>Guten Tag%s,</p>'
-            . '<p>Ihr Bestaetigungscode fuer die Anmeldung lautet:</p>'
+            . '<p>Hello%s,</p>'
+            . '<p>Your verification code:</p>'
             . '<div style="font-size: 36px; font-weight: bold; letter-spacing: 10px; '
             . 'text-align: center; padding: 25px; background: #f0f4f8; '
             . 'border: 2px solid #003366; border-radius: 8px; margin: 25px 0; '
             . 'color: #003366;">%s</div>'
-            . '<p>Dieser Code ist <strong>%d Minuten</strong> gueltig.</p>'
+            . '<p>This code is valid for <strong>%d minutes</strong>.</p>'
             . '<hr style="border: none; border-top: 1px solid #ddd; margin: 25px 0;">'
-            . '<p style="color: #888; font-size: 12px;">Falls Sie diese Anmeldung '
-            . 'nicht durchgefuehrt haben, ignorieren Sie bitte diese E-Mail '
-            . 'und aendern Sie sicherheitshalber Ihr Passwort.</p>'
+            . '<p style="color: #888; font-size: 12px;">If you did not initiate this login, '
+            . 'please ignore this email and consider changing your password as a precaution.</p>'
+            . '%s'
             . '</body></html>',
+            htmlspecialchars($siteName),
             $name !== '' ? ' ' . htmlspecialchars($name) : '',
             htmlspecialchars($code),
-            $validMinutes
+            $validMinutes,
+            $signatureHtml
         );
 
         try {
@@ -82,6 +95,16 @@ class MailService
                     'email' => $email,
                 ]);
             return false;
+        }
+    }
+
+    private function getExtConf(): array
+    {
+        try {
+            return GeneralUtility::makeInstance(ExtensionConfiguration::class)
+                ->get('mfa_email') ?? [];
+        } catch (\Throwable $e) {
+            return [];
         }
     }
 }

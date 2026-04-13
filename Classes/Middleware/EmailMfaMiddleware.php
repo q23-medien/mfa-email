@@ -11,6 +11,7 @@ use Psr\Http\Server\RequestHandlerInterface;
 use Q23\MfaEmail\Service\CodeService;
 use Q23\MfaEmail\Service\MailService;
 use Q23\MfaEmail\Updates\DatabaseMigration;
+use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 use TYPO3\CMS\Core\Http\HtmlResponse;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
@@ -126,19 +127,32 @@ class EmailMfaMiddleware implements MiddlewareInterface
         );
     }
 
+    private function getSiteName(): string
+    {
+        try {
+            $conf = GeneralUtility::makeInstance(ExtensionConfiguration::class)
+                ->get('mfa_email') ?? [];
+            $name = trim((string)($conf['siteName'] ?? ''));
+            return $name !== '' ? $name : 'My Website';
+        } catch (\Throwable $e) {
+            return 'My Website';
+        }
+    }
+
     /**
      * Wrap the form content in a full HTML page.
      */
     private function renderPage(string $content): string
     {
+        $siteName = htmlspecialchars($this->getSiteName());
         return <<<HTML
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex, nofollow">
-    <title>Anmeldung - Bestaetigungscode | DPV-PSA</title>
+    <title>Login – Verification Code | {$siteName}</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -265,33 +279,34 @@ HTML;
      */
     private function getCodeFormHtml(bool $hasError, int $remainingSeconds, string $redirectPath): string
     {
+        $siteName = htmlspecialchars($this->getSiteName());
         $errorHtml = '';
         if ($hasError) {
             $errorHtml = '<div class="mfa-error">'
-                . 'Ungueltiger oder abgelaufener Code. Bitte versuchen Sie es erneut.'
+                . 'Invalid or expired code. Please try again.'
                 . '</div>';
         }
 
         $minutes = (int)floor($remainingSeconds / 60);
         $seconds = $remainingSeconds % 60;
-        $timerText = sprintf('Code gueltig fuer noch %d:%02d Minuten', $minutes, $seconds);
+        $timerText = sprintf('Code valid for %d:%02d minutes', $minutes, $seconds);
         $escapedRedirect = htmlspecialchars($redirectPath);
 
         return <<<HTML
         <div class="mfa-header">
-            <h1>DPV-PSA</h1>
-            <p>Zwei-Faktor-Authentifizierung</p>
+            <h1>{$siteName}</h1>
+            <p>Two-Factor Authentication</p>
         </div>
         <div class="mfa-icon">&#128274;</div>
         <p class="mfa-description">
-            Ein 6-stelliger Bestaetigungscode wurde an Ihre<br>
-            E-Mail-Adresse gesendet.
+            A 6-digit verification code has been sent to your<br>
+            email address.
         </p>
         {$errorHtml}
         <form method="post" action="">
             <input type="hidden" name="tx_dpvmfaemail_redirect" value="{$escapedRedirect}">
             <label for="mfa-code" style="display: block; font-weight: 600; margin-bottom: 8px; font-size: 14px;">
-                Bestaetigungscode
+                Verification Code
             </label>
             <input type="text" name="tx_dpvmfaemail_code" id="mfa-code"
                    class="mfa-input"
@@ -300,9 +315,9 @@ HTML;
                    autocomplete="one-time-code" autofocus
                    required>
             <p class="mfa-timer">{$timerText}</p>
-            <button type="submit" class="mfa-btn">Besteatigen</button>
+            <button type="submit" class="mfa-btn">Verify</button>
             <button type="submit" name="tx_dpvmfaemail_resend" value="1" class="mfa-resend">
-                Code erneut senden
+                Resend code
             </button>
         </form>
 HTML;
@@ -313,17 +328,18 @@ HTML;
      */
     private function getLockedHtml(): string
     {
+        $siteName = htmlspecialchars($this->getSiteName());
         return <<<HTML
         <div class="mfa-header">
-            <h1>DPV-PSA</h1>
-            <p>Zwei-Faktor-Authentifizierung</p>
+            <h1>{$siteName}</h1>
+            <p>Two-Factor Authentication</p>
         </div>
         <div class="mfa-locked">
             <div style="font-size: 48px; margin-bottom: 15px;">&#9888;</div>
-            <h2>Voruebergehend gesperrt</h2>
+            <h2>Temporarily locked</h2>
             <p style="color: #666; line-height: 1.6;">
-                Zu viele fehlgeschlagene Versuche.<br>
-                Bitte versuchen Sie es in 15 Minuten erneut.
+                Too many failed attempts.<br>
+                Please try again in 15 minutes.
             </p>
         </div>
 HTML;
