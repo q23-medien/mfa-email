@@ -1,0 +1,36 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# TYPO3
+var/
+public/
+.Build/
+Build/
+bin/
+vendor/
+
+# Composer
+composer.lock
+
+# Testing
+.phpunit.result.cache
+.phpcs-cache
+
+# Packaging
+*.zip
+
+# plans
+docs/plans/
+
+# claude
+CLAUDE.md
+
+# codex
+AGENTS.md
