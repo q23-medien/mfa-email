@@ -34,17 +34,17 @@ class DatabaseMigration implements UpgradeWizardInterface
 
     public function getIdentifier(): string
     {
-        return 'dpvMfaEmailDbMigration';
+        return 'mfaEmailDbMigration';
     }
 
     public function getTitle(): string
     {
-        return 'DPV E-Mail 2FA: Datenbankfelder anlegen';
+        return 'Email 2FA: Create database fields';
     }
 
     public function getDescription(): string
     {
-        return 'Legt die benoetigten Spalten fuer die E-Mail-basierte Zwei-Faktor-Authentifizierung in der fe_users-Tabelle an.';
+        return 'Creates the required columns for email-based two-factor authentication in the fe_users table.';
     }
 
     public function getPrerequisites(): array

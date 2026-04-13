@@ -17,7 +17,7 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 class CodeService
 {
     /**
-     * Code validity in seconds (6 minutes, as agreed with DPV/Pudelko)
+     * Code validity in seconds (6 minutes)
      */
     public const CODE_VALIDITY_SECONDS = 360;
 
