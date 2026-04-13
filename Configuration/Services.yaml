@@ -1,0 +1,17 @@
+services:
+  _defaults:
+    autowire: true
+    autoconfigure: true
+    public: false
+
+  Q23\MfaEmail\:
+    resource: '../Classes/*'
+
+  Q23\MfaEmail\Middleware\EmailMfaMiddleware:
+    public: true
+
+  Q23\MfaEmail\Service\CodeService:
+    public: true
+
+  Q23\MfaEmail\Service\MailService:
+    public: true
