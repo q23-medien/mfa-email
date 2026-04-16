@@ -156,7 +156,7 @@ class EmailMfaMiddleware implements MiddlewareInterface
     private function renderPage(ServerRequestInterface $request, string $content): string
     {
         $siteName = $this->getSiteName($request);
-        $pageTitle = htmlspecialchars(LocalizationHelper::translateForRequest($request, 'page.title', [$siteName]));
+        $pageTitle = htmlspecialchars(LocalizationHelper::translateForRequest($request, 'page.title', [$siteName]), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         $htmlLanguage = LocalizationHelper::getHtmlLanguageForRequest($request);
         return <<<HTML
 <!DOCTYPE html>
@@ -297,23 +297,25 @@ HTML;
         string $redirectPath
     ): string
     {
-        $siteName = htmlspecialchars($this->getSiteName($request));
+        $siteName = htmlspecialchars($this->getSiteName($request), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         $errorHtml = '';
         if ($hasError) {
             $errorHtml = '<div class="mfa-error">'
-                . htmlspecialchars(LocalizationHelper::translateForRequest($request, 'form.error.invalidCode'))
+                . htmlspecialchars(LocalizationHelper::translateForRequest($request, 'form.error.invalidCode'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')
                 . '</div>';
         }
 
         $minutes = (int)floor($remainingSeconds / 60);
         $seconds = $remainingSeconds % 60;
-        $timerText = htmlspecialchars(LocalizationHelper::translateForRequest($request, 'form.timer', [$minutes, $seconds]));
-        $escapedRedirect = htmlspecialchars($redirectPath);
-        $subtitle = htmlspecialchars(LocalizationHelper::translateForRequest($request, 'form.subtitle'));
-        $description = htmlspecialchars(LocalizationHelper::translateForRequest($request, 'form.description'));
-        $codeLabel = htmlspecialchars(LocalizationHelper::translateForRequest($request, 'form.label.code'));
-        $verifyLabel = htmlspecialchars(LocalizationHelper::translateForRequest($request, 'form.button.verify'));
-        $resendLabel = htmlspecialchars(LocalizationHelper::translateForRequest($request, 'form.button.resend'));
+        $timerText = htmlspecialchars(LocalizationHelper::translateForRequest($request, 'form.timer', [$minutes, $seconds]), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $timerTemplate = htmlspecialchars(LocalizationHelper::translateForRequest($request, 'form.timer.template'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $timerExpired = htmlspecialchars(LocalizationHelper::translateForRequest($request, 'form.timer.expired'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $escapedRedirect = htmlspecialchars($redirectPath, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $subtitle = htmlspecialchars(LocalizationHelper::translateForRequest($request, 'form.subtitle'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $description = htmlspecialchars(LocalizationHelper::translateForRequest($request, 'form.description'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $codeLabel = htmlspecialchars(LocalizationHelper::translateForRequest($request, 'form.label.code'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $verifyLabel = htmlspecialchars(LocalizationHelper::translateForRequest($request, 'form.button.verify'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $resendLabel = htmlspecialchars(LocalizationHelper::translateForRequest($request, 'form.button.resend'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 
         return <<<HTML
         <div class="mfa-header">
@@ -334,12 +336,39 @@ HTML;
                    maxlength="6" pattern="[0-9]{6}" inputmode="numeric"
                    autocomplete="one-time-code" autofocus
                    required>
-            <p class="mfa-timer">{$timerText}</p>
+            <p class="mfa-timer" id="mfa-timer"
+               data-seconds="{$remainingSeconds}"
+               data-template="{$timerTemplate}"
+               data-expired="{$timerExpired}">{$timerText}</p>
             <button type="submit" class="mfa-btn">{$verifyLabel}</button>
             <button type="submit" name="tx_dpvmfaemail_resend" value="1" class="mfa-resend">
                 {$resendLabel}
             </button>
         </form>
+        <script>
+        (function () {
+            var el = document.getElementById('mfa-timer');
+            if (!el) return;
+            var seconds = parseInt(el.getAttribute('data-seconds'), 10);
+            var template = el.getAttribute('data-template');
+            var expired = el.getAttribute('data-expired');
+
+            function pad(n) { return n < 10 ? '0' + n : '' + n; }
+
+            function tick() {
+                if (seconds <= 0) {
+                    el.textContent = expired;
+                    return;
+                }
+                var m = Math.floor(seconds / 60);
+                var s = seconds % 60;
+                el.textContent = template.replace('{m}', m).replace('{s}', pad(s));
+                seconds--;
+                setTimeout(tick, 1000);
+            }
+            tick();
+        })();
+        </script>
 HTML;
     }
 
@@ -348,14 +377,14 @@ HTML;
      */
     private function getLockedHtml(ServerRequestInterface $request): string
     {
-        $siteName = htmlspecialchars($this->getSiteName($request));
-        $subtitle = htmlspecialchars(LocalizationHelper::translateForRequest($request, 'form.subtitle'));
-        $lockTitle = htmlspecialchars(LocalizationHelper::translateForRequest($request, 'lock.title'));
+        $siteName = htmlspecialchars($this->getSiteName($request), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $subtitle = htmlspecialchars(LocalizationHelper::translateForRequest($request, 'form.subtitle'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $lockTitle = htmlspecialchars(LocalizationHelper::translateForRequest($request, 'lock.title'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         $lockDescription = htmlspecialchars(LocalizationHelper::translateForRequest(
             $request,
             'lock.description',
             [(int)ceil(CodeService::LOCKOUT_SECONDS / 60)]
-        ));
+        ), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         return <<<HTML
         <div class="mfa-header">
             <h1>{$siteName}</h1>

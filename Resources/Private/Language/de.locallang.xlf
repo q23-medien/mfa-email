@@ -59,6 +59,14 @@
                 <source>Code valid for %d:%02d minutes</source>
                 <target>Code gültig für %d:%02d Minuten</target>
             </trans-unit>
+            <trans-unit id="form.timer.template" xml:space="preserve">
+                <source>Code valid for {m}:{s} minutes</source>
+                <target>Code gültig für {m}:{s} Minuten</target>
+            </trans-unit>
+            <trans-unit id="form.timer.expired" xml:space="preserve">
+                <source>Code expired</source>
+                <target>Code abgelaufen</target>
+            </trans-unit>
             <trans-unit id="form.label.code" xml:space="preserve">
                 <source>Verification Code</source>
                 <target>Verifizierungscode</target>
